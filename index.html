@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Недельный трекер привычек</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3b82f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+<style>
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui;
+  background:#f6f7fb;
+  padding:16px;
+  max-width:720px;
+  margin:auto;
+}
+h1{font-size:20px;text-align:center}
+.card{
+  background:#fff;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:14px;
+}
+input,button{
+  padding:10px;
+  font-size:16px;
+  border-radius:10px;
+}
+input{border:1px solid #ddd;width:65%}
+button{
+  border:none;
+  background:#3b82f6;
+  color:white;
+}
+.week{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-top:10px;
+}
+.cell{
+  background:#e5e7eb;
+  border-radius:10px;
+  padding:8px;
+  text-align:center;
+  font-size:13px;
+}
+.done{background:#22c55e;color:white}
+.stats{font-size:14px;color:#555;margin-top:8px}
+</style>
+</head>
+<body>
+
+<h1>📅 Недельный трекер привычек</h1>
+
+<div class="card">
+  <input id="name" placeholder="Новая привычка">
+  <button onclick="add()">Добавить</button>
+</div>
+
+<div id="list"></div>
+
+<script>
+const KEY="week-tracker-simple";
+let data=JSON.parse(localStorage.getItem(KEY)||"[]");
+
+function monday(d){
+  d=new Date(d);
+  const day=(d.getDay()+6)%7;
+  d.setDate(d.getDate()-day);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function key(d){return d.toISOString().slice(0,10)}
+function fmt(d){return d.toLocaleDateString("ru-RU",{day:"2-digit",month:"short"})}
+
+function add(){
+  const n=name.value.trim();
+  if(!n)return;
+  data.unshift({name:n,weeks:{}});
+  name.value="";
+  save();render();
+}
+function toggle(h){
+  const k=key(monday(new Date()));
+  h.weeks[k]=!h.weeks[k];
+  if(!h.weeks[k]) delete h.weeks[k];
+  save();render();
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+
+function render(){
+  list.innerHTML="";
+  const weeks=[...Array(8)].map((_,i)=>{
+    const d=monday(new Date());
+    d.setDate(d.getDate()-7*(7-i));
+    return d;
+  });
+  data.forEach(h=>{
+    const done=Object.keys(h.weeks).length;
+    const card=document.createElement("div");
+    card.className="card";
+    card.innerHTML=`<b>${h.name}</b>
+    <button style="float:right" onclick="toggle(data[${data.indexOf(h)}])">✔ Эта неделя</button>
+    <div class="week">${
+      weeks.map(w=>{
+        const k=key(w);
+        return `<div class="cell ${h.weeks[k]?"done":""}">${fmt(w)}</div>`
+      }).join("")
+    }</div>
+    <div class="stats">Выполнено недель: ${done}</div>`;
+    list.appendChild(card);
+  });
+}
+render();
+</script>
+
+</body>
+</html>
